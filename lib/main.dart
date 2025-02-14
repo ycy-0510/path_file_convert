@@ -30,44 +30,78 @@ class MainApp extends StatelessWidget {
   }
 }
 
-class HomeBody extends StatelessWidget {
+class HomeBody extends StatefulWidget {
   const HomeBody({super.key});
+
+  @override
+  State<HomeBody> createState() => _HomeBodyState();
+}
+
+class _HomeBodyState extends State<HomeBody> {
+  String saveTo = '';
+
+  @override
+  void initState() {
+    getDownloadsDirectory().then((d) {
+      setState(() {
+        saveTo = d!.path;
+      });
+    });
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: FormPrimaryButton(
-        onPressed: () async {
-          try {
-            FilePickerResult? result = await FilePicker.platform.pickFiles(
-              type: FileType.custom,
-              allowedExtensions: ['path'],
-            );
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 20,
+          children: [
+            FormSecondaryButton(
+                onPressed: () {
+                  FilePicker.platform.getDirectoryPath().then((p) {
+                    setState(() {
+                      saveTo = p!;
+                    });
+                  });
+                },
+                child: Text('Save to $saveTo')),
+            FormPrimaryButton(
+              onPressed: () async {
+                try {
+                  FilePickerResult? result =
+                      await FilePicker.platform.pickFiles(
+                    type: FileType.custom,
+                    allowedExtensions: ['path'],
+                  );
 
-            if (result != null) {
-              File file = File(result.files.single.path!);
-              String content = await file.readAsString();
-              String updatedContent = content.replaceAll(
-                  'idealStartingState', 'previewStartingState');
-
-              Directory? appDocDir = await getDownloadsDirectory();
-              String appDocPath = appDocDir!.path;
-              String newFilePath = '$appDocPath/${result.files.single.name}';
-              File newFile = File(newFilePath);
-              await newFile.writeAsString(updatedContent);
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('File saved to $newFilePath'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
-          } catch (e) {
-            debugPrint(e.toString());
-          }
-        },
-        child: const Text('Select and Convert File'),
+                  if (result != null) {
+                    File file = File(result.files.single.path!);
+                    String content = await file.readAsString();
+                    String updatedContent = content.replaceAll(
+                        'idealStartingState', 'previewStartingState');
+                    String newFilePath = '$saveTo/${result.files.single.name}';
+                    File newFile = File(newFilePath);
+                    await newFile.writeAsString(updatedContent);
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('File saved to $newFilePath'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  debugPrint(e.toString());
+                }
+              },
+              child: const Text('Select and Convert File'),
+            ),
+          ],
+        ),
       ),
     );
   }
